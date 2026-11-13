@@ -9,10 +9,18 @@
   "scripts": {
     "dev": "pnpm --recursive --parallel run dev",
     "build": "pnpm --recursive run build",
+    "lint": "eslint .",
+    "typecheck": "pnpm --recursive run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "prettier": "3.10.1"
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.14.0",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2"
   }
 }
