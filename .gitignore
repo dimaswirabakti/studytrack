@@ -1,5 +1,27 @@
+# dependencies
 node_modules/
+
+# build output
 dist/
+*.tsbuildinfo
+
+# environment
 .env
-backend/db.json
+.env.*
+!.env.example
+
+# test coverage
+coverage/
+
+# deployment
+.vercel/
+
+# logs
 *.log
+
+# os and editor
+.DS_Store
+.idea/
+
+# local json storage from the starter kit
+backend/db.json
