@@ -22,6 +22,3 @@ coverage/
 # os and editor
 .DS_Store
 .idea/
-
-# local json storage from the starter kit
-backend/db.json
