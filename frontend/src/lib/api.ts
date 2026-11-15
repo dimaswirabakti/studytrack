@@ -1,5 +1,5 @@
 import axios, { isAxiosError } from "axios";
-import type { AuthResponse, Course, Task, TaskStatus, User } from "./types";
+import type { AuthResponse, Course, TaskList, TaskStatus, User } from "./types";
 
 export const TOKEN_KEY = "studytrack_token";
 export const UNAUTHORIZED_EVENT = "studytrack:unauthorized";
@@ -67,9 +67,9 @@ export const authApi = {
 };
 
 export const taskApi = {
-  list: async (): Promise<Task[]> => {
-    const { data } = await http.get<{ tasks: Task[] }>("/tasks");
-    return data.tasks;
+  list: async (): Promise<TaskList> => {
+    const { data } = await http.get<TaskList>("/tasks");
+    return data;
   },
   create: async (input: TaskInput): Promise<void> => {
     await http.post("/tasks", input);

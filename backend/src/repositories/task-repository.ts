@@ -33,7 +33,7 @@ export interface UpdateTaskInput {
 
 const TASK_COLUMNS = "id, user_id, mata_kuliah_id, judul, deskripsi, deadline, status, created_at";
 
-// seluruh tugas user lintas mata kuliah, tugas terbaru di atas
+// seluruh tugas user lintas mata kuliah, urutan akhir ditentukan oleh fungsi kategori di layer domain
 export async function listTasks(userId: number): Promise<TaskWithCourse[]> {
   const { rows } = await pool.query<TaskWithCourse>(
     `select t.id, t.user_id, t.mata_kuliah_id, t.judul, t.deskripsi, t.deadline, t.status,
@@ -41,7 +41,7 @@ export async function listTasks(userId: number): Promise<TaskWithCourse[]> {
      from tasks t
      join courses c on c.id = t.mata_kuliah_id
      where t.user_id = $1
-     order by t.created_at desc, t.id desc`,
+     order by t.deadline, t.id`,
     [userId],
   );
   return rows;

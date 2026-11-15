@@ -2,6 +2,9 @@
 
 export type TaskStatus = "belum" | "selesai";
 
+// kategori dihitung backend berdasarkan sisa waktu ke deadline
+export type TaskCategory = "mendekati_deadline" | "terlambat" | "normal" | "selesai";
+
 export interface User {
   id: number;
   nama: string;
@@ -26,6 +29,14 @@ export interface Task {
   status: TaskStatus;
   created_at: string;
   mata_kuliah: string;
+  kategori: TaskCategory;
+  // selisih deadline dengan waktu server saat respons dibuat, negatif jika sudah lewat
+  sisa_ms: number;
+}
+
+export interface TaskList {
+  tasks: Task[];
+  server_time: string;
 }
 
 export interface AuthResponse {

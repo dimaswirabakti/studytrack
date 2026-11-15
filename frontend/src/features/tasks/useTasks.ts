@@ -4,8 +4,15 @@ import type { TaskStatus } from "../../lib/types";
 
 export const TASKS_KEY = ["tasks"] as const;
 
+// kategori bergeser seiring waktu sehingga daftar diambil ulang setiap menit dan saat tab kembali aktif
+const REFRESH_INTERVAL_MS = 60_000;
+
 export function useTasks() {
-  return useQuery({ queryKey: TASKS_KEY, queryFn: taskApi.list });
+  return useQuery({
+    queryKey: TASKS_KEY,
+    queryFn: taskApi.list,
+    refetchInterval: REFRESH_INTERVAL_MS,
+  });
 }
 
 function useInvalidateTasks() {

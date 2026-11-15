@@ -29,8 +29,14 @@ export function TaskComposer({ id, courses, onClose }: TaskComposerProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // nilai datetime-local dibaca sebagai waktu lokal perangkat lalu dikirim sebagai iso utc
     createTask.mutate(
-      { mata_kuliah_id: Number(courseId), judul, deskripsi, deadline },
+      {
+        mata_kuliah_id: Number(courseId),
+        judul,
+        deskripsi,
+        deadline: new Date(deadline).toISOString(),
+      },
       { onSuccess: onClose },
     );
   }
