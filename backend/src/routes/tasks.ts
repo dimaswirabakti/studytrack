@@ -16,8 +16,11 @@ const router = Router();
 const NOT_FOUND = "Tugas tidak ditemukan.";
 const CREATE_REQUIRED = "mata_kuliah_id, judul, dan deadline wajib diisi.";
 
-// format keluaran input datetime-local yaitu tanggal dan jam tanpa zona waktu
-const deadlineSchema = z.iso.datetime({ local: true, error: "Format deadline tidak valid." });
+// deadline wajib berupa iso 8601 lengkap dengan zona waktu supaya tidak ambigu
+const deadlineSchema = z.iso.datetime({
+  offset: true,
+  error: "Deadline harus berupa tanggal ISO 8601 lengkap dengan zona waktu.",
+});
 
 const createTaskSchema = z.object({
   mata_kuliah_id: z.coerce.number({ error: CREATE_REQUIRED }).int().positive(CREATE_REQUIRED),
