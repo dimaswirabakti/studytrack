@@ -5,6 +5,7 @@ import { categorizeTasks, withCategory } from "../domain/task-category.js";
 import { HttpError } from "../lib/http-error.js";
 import { parseId, parseOrThrow } from "../lib/validation.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
+import taskPlanRoutes from "./task-plans.js";
 import {
   createTask,
   deleteTask,
@@ -41,6 +42,9 @@ const updateTaskSchema = z.object({
 
 // seluruh endpoint tugas membutuhkan login
 router.use(requireAuth);
+
+// rencana kerja ai untuk satu tugas
+router.use("/:id/plan", taskPlanRoutes);
 
 // get /api/tasks daftar seluruh tugas user lintas mata kuliah, sudah dikategorikan dan diurutkan
 router.get("/", async (req, res) => {

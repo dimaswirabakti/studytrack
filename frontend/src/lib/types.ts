@@ -43,3 +43,26 @@ export interface AuthResponse {
   token: string;
   user: User;
 }
+
+export interface StudyPlanStep {
+  judul: string;
+  durasi_menit: number;
+}
+
+export interface StudyPlan {
+  ringkasan: string;
+  langkah: StudyPlanStep[];
+  saran: string;
+}
+
+export interface SavedPlan {
+  plan: StudyPlan;
+  model: string;
+  created_at: string;
+}
+
+export interface PlanStatus {
+  plan: SavedPlan | null;
+  // false jika server belum dikonfigurasi dengan api key gemini
+  enabled: boolean;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatOverdue, formatRemaining } from "./deadline";
+import { formatDuration, formatOverdue, formatRemaining } from "./deadline";
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -39,5 +39,19 @@ describe("formatOverdue", () => {
 
   it("menampilkan minimal 1 menit tepat setelah deadline", () => {
     expect(formatOverdue(-1)).toBe("Terlambat 1 menit");
+  });
+});
+
+describe("formatDuration", () => {
+  it("menampilkan menit saja untuk durasi di bawah satu jam", () => {
+    expect(formatDuration(45)).toBe("45 menit");
+  });
+
+  it("menampilkan jam dan menit", () => {
+    expect(formatDuration(135)).toBe("2 jam 15 menit");
+  });
+
+  it("tidak menampilkan menit jika tepat satu jam penuh", () => {
+    expect(formatDuration(120)).toBe("2 jam");
   });
 });

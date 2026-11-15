@@ -47,9 +47,13 @@ export async function listTasks(userId: number): Promise<TaskWithCourse[]> {
   return rows;
 }
 
-export async function findTask(userId: number, id: number): Promise<Task | undefined> {
-  const { rows } = await pool.query<Task>(
-    `select ${TASK_COLUMNS} from tasks where id = $1 and user_id = $2`,
+export async function findTask(userId: number, id: number): Promise<TaskWithCourse | undefined> {
+  const { rows } = await pool.query<TaskWithCourse>(
+    `select t.id, t.user_id, t.mata_kuliah_id, t.judul, t.deskripsi, t.deadline, t.status,
+            t.created_at, c.name as mata_kuliah
+     from tasks t
+     join courses c on c.id = t.mata_kuliah_id
+     where t.id = $1 and t.user_id = $2`,
     [id, userId],
   );
   return rows[0];
