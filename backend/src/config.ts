@@ -5,8 +5,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.url(),
   JWT_SECRET: z.string().min(32, "JWT_SECRET minimal 32 karakter"),
-  // fitur rencana ai hanya aktif jika api key tersedia
-  GEMINI_API_KEY: z.string().min(1).optional(),
+  // fitur rencana ai hanya aktif jika api key terisi, nilai kosong dianggap belum diatur
+  GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().min(1).default("gemini-3.1-flash-lite"),
 });
 

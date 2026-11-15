@@ -1,3 +1,4 @@
+import { attachDatabasePool } from "@vercel/functions";
 import pg from "pg";
 import { env } from "../config.js";
 
@@ -8,3 +9,6 @@ export const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
   max: 5,
 });
+
+// di vercel fluid compute koneksi yang menganggur ditutup sebelum instance di-suspend
+attachDatabasePool(pool);
