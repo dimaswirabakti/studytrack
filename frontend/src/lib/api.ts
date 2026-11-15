@@ -1,5 +1,13 @@
 import axios, { isAxiosError } from "axios";
-import type { AuthResponse, Course, TaskList, TaskStatus, User } from "./types";
+import type {
+  AuthResponse,
+  Course,
+  PlanStatus,
+  SavedPlan,
+  TaskList,
+  TaskStatus,
+  User,
+} from "./types";
 
 export const TOKEN_KEY = "studytrack_token";
 export const UNAUTHORIZED_EVENT = "studytrack:unauthorized";
@@ -92,5 +100,16 @@ export const courseApi = {
   },
   remove: async (id: number): Promise<void> => {
     await http.delete(`/courses/${id}`);
+  },
+};
+
+export const planApi = {
+  get: async (taskId: number): Promise<PlanStatus> => {
+    const { data } = await http.get<PlanStatus>(`/tasks/${taskId}/plan`);
+    return data;
+  },
+  generate: async (taskId: number): Promise<SavedPlan> => {
+    const { data } = await http.post<{ plan: SavedPlan }>(`/tasks/${taskId}/plan`);
+    return data.plan;
   },
 };

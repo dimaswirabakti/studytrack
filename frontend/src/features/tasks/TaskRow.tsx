@@ -1,9 +1,11 @@
-import { CheckCircleIcon, CircleIcon } from "@phosphor-icons/react";
+import { CheckCircleIcon, CircleIcon, ListChecksIcon } from "@phosphor-icons/react";
+import { useState } from "react";
 import { ConfirmDeleteButton } from "../../components/ConfirmDeleteButton";
 import { IconButton } from "../../components/ui";
 import { formatShortDate, formatTime } from "../../lib/date";
 import type { Task } from "../../lib/types";
 import { DeadlineBadge } from "./DeadlineBadge";
+import { StudyPlanPanel } from "./StudyPlanPanel";
 import { useDeleteTask, useSetTaskStatus } from "./useTasks";
 
 interface TaskRowProps {
@@ -17,7 +19,9 @@ export function TaskRow({ task, elapsedMs, showDate = false }: TaskRowProps) {
   const deleteTask = useDeleteTask();
   const deadline = new Date(task.deadline);
   const done = task.status === "selesai";
+  const [planOpen, setPlanOpen] = useState(false);
   const busy = setStatus.isPending || deleteTask.isPending;
+  const planPanelId = `plan-${task.id}`;
   // sisa waktu dari server dikurangi waktu yang sudah berjalan sejak data diambil
   const remainingMs = task.sisa_ms - elapsedMs;
 
@@ -59,6 +63,19 @@ export function TaskRow({ task, elapsedMs, showDate = false }: TaskRowProps) {
         )}
       </div>
       <div className="flex items-center gap-0.5">
+        {!done && (
+          <IconButton
+            label="Rencana kerja AI"
+            aria-expanded={planOpen}
+            aria-controls={planPanelId}
+            onClick={() => setPlanOpen((open) => !open)}
+            className={
+              planOpen ? "bg-zinc-200/70 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100" : ""
+            }
+          >
+            <ListChecksIcon size={20} />
+          </IconButton>
+        )}
         <IconButton
           label={done ? "Tandai belum selesai" : "Tandai selesai"}
           aria-pressed={done}
@@ -74,6 +91,9 @@ export function TaskRow({ task, elapsedMs, showDate = false }: TaskRowProps) {
           onConfirm={() => deleteTask.mutate(task.id)}
         />
       </div>
+      {planOpen && !done && (
+        <StudyPlanPanel id={planPanelId} taskId={task.id} remainingMs={remainingMs} />
+      )}
     </li>
   );
 }

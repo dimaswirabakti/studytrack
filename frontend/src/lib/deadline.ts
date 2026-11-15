@@ -26,3 +26,13 @@ export function formatOverdue(remainingMs: number): string {
   }
   return `Terlambat ${Math.floor(lateMs / DAY_MS)} hari`;
 }
+
+// durasi rencana kerja dalam format jam dan menit
+export function formatDuration(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) {
+    return `${minutes} menit`;
+  }
+  return minutes === 0 ? `${hours} jam` : `${hours} jam ${minutes} menit`;
+}
