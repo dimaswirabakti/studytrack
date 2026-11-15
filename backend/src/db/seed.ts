@@ -14,7 +14,19 @@ const DEMO_COURSES = [
   { name: "Software Engineering", kode: "CS 169", dosen: "Dr. Budi Santoso" },
 ];
 
-const DEMO_TASKS = [
+const HOUR_MS = 60 * 60 * 1000;
+
+interface SeedTask {
+  courseIndex: number;
+  judul: string;
+  deskripsi: string;
+  deadline: string;
+  createdAt: string;
+  status?: "belum" | "selesai";
+}
+
+// tiga tugas pertama sama persis dengan contoh data pada dokumen studi kasus
+const SAMPLE_TASKS: SeedTask[] = [
   {
     courseIndex: 0,
     judul: "Lab 4: Query Optimization Report",
@@ -37,6 +49,50 @@ const DEMO_TASKS = [
     createdAt: "2026-06-17T11:00:00+07:00",
   },
 ];
+
+// tugas demo dihitung dari waktu seed supaya semua kategori langsung terlihat saat aplikasi dibuka
+function demoTasks(now: Date): SeedTask[] {
+  const fromNow = (hours: number) => new Date(now.getTime() + hours * HOUR_MS).toISOString();
+  const createdAt = fromNow(-72);
+  return [
+    {
+      courseIndex: 1,
+      judul: "Kuis Pohon AVL",
+      deskripsi: "Latihan soal rotasi kiri dan kanan sebelum kuis.",
+      deadline: fromNow(3),
+      createdAt,
+    },
+    {
+      courseIndex: 0,
+      judul: "Tugas Normalisasi 3NF",
+      deskripsi: "Normalisasi skema perpustakaan sampai bentuk normal ketiga.",
+      deadline: fromNow(20),
+      createdAt,
+    },
+    {
+      courseIndex: 2,
+      judul: "Review Pull Request Sprint 3",
+      deskripsi: "Review dua pull request tim dan beri komentar.",
+      deadline: fromNow(52),
+      createdAt,
+    },
+    {
+      courseIndex: 0,
+      judul: "Proposal Basis Data Proyek Akhir",
+      deskripsi: "",
+      deadline: fromNow(140),
+      createdAt,
+    },
+    {
+      courseIndex: 2,
+      judul: "Ringkasan Materi Testing",
+      deskripsi: "Rangkuman unit test dan integration test minggu ini.",
+      deadline: fromNow(-30),
+      createdAt,
+      status: "selesai",
+    },
+  ];
+}
 
 // menghapus seluruh data lalu mengisi ulang dengan data seed
 export async function resetDatabase(): Promise<void> {
@@ -62,10 +118,10 @@ export async function resetDatabase(): Promise<void> {
       courseIds.push(rows[0]!.id);
     }
 
-    for (const task of DEMO_TASKS) {
+    for (const task of [...SAMPLE_TASKS, ...demoTasks(new Date())]) {
       await client.query(
-        `insert into tasks (user_id, mata_kuliah_id, judul, deskripsi, deadline, created_at)
-         values ($1, $2, $3, $4, $5, $6)`,
+        `insert into tasks (user_id, mata_kuliah_id, judul, deskripsi, deadline, created_at, status)
+         values ($1, $2, $3, $4, $5, $6, $7)`,
         [
           userId,
           courseIds[task.courseIndex],
@@ -73,6 +129,7 @@ export async function resetDatabase(): Promise<void> {
           task.deskripsi,
           task.deadline,
           task.createdAt,
+          task.status ?? "belum",
         ],
       );
     }
