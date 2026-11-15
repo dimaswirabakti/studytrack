@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { isForeignKeyViolation } from "../db/errors.js";
+import { categorizeTasks, withCategory } from "../domain/task-category.js";
 import { HttpError } from "../lib/http-error.js";
 import { parseId, parseOrThrow } from "../lib/validation.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
@@ -41,10 +42,12 @@ const updateTaskSchema = z.object({
 // seluruh endpoint tugas membutuhkan login
 router.use(requireAuth);
 
-// get /api/tasks daftar seluruh tugas user lintas mata kuliah
+// get /api/tasks daftar seluruh tugas user lintas mata kuliah, sudah dikategorikan dan diurutkan
 router.get("/", async (req, res) => {
   const tasks = await listTasks(currentUser(req).id);
-  res.json({ tasks });
+  // satu nilai waktu dipakai untuk semua tugas supaya kategorinya konsisten dalam satu respons
+  const now = new Date();
+  res.json({ tasks: categorizeTasks(tasks, now), server_time: now.toISOString() });
 });
 
 // get /api/tasks/{id} detail satu tugas
@@ -55,7 +58,7 @@ router.get("/:id", async (req, res) => {
   if (!task) {
     throw new HttpError(404, NOT_FOUND);
   }
-  res.json({ task });
+  res.json({ task: withCategory(task, new Date()) });
 });
 
 // post /api/tasks menambahkan tugas baru dengan status awal belum
@@ -64,7 +67,7 @@ router.post("/", async (req, res) => {
 
   try {
     const task = await createTask(currentUser(req).id, input);
-    res.status(201).json({ task });
+    res.status(201).json({ task: withCategory(task, new Date()) });
   } catch (error) {
     // foreign key komposit menolak mata kuliah yang bukan milik user
     if (isForeignKeyViolation(error)) {
@@ -83,7 +86,7 @@ router.put("/:id", async (req, res) => {
   if (!task) {
     throw new HttpError(404, NOT_FOUND);
   }
-  res.json({ task });
+  res.json({ task: withCategory(task, new Date()) });
 });
 
 // delete /api/tasks/{id} menghapus satu tugas
