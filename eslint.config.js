@@ -18,7 +18,11 @@ export default defineConfig([
     },
     rules: {
       // parameter berawalan underscore sengaja tidak dipakai, misalnya next pada error handler express
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      // properti yang dibuang lewat destructuring rest juga tidak dianggap variabel menganggur
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", ignoreRestSiblings: true },
+      ],
     },
   },
   {
