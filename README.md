@@ -52,8 +52,8 @@ Frontend berjalan di `http://localhost:5173`. Selama mode development, request `
 
 File `backend/db.json` dibuat otomatis saat backend pertama kali dijalankan dan langsung berisi data seed. Anda bisa masuk dengan akun berikut:
 
-| Email | Password |
-| --- | --- |
+| Email                  | Password   |
+| ---------------------- | ---------- |
 | `demo@studytrack.test` | `demo1234` |
 
 Untuk mengembalikan data ke kondisi seed kapan pun:
@@ -70,26 +70,26 @@ Struktur ini mengikuti Bagian 1 (Konteks Aplikasi) pada dokumen studi kasus. Kol
 
 **Mata kuliah** (`courses`)
 
-| Field | Tipe | Keterangan |
-| --- | --- | --- |
-| `id` | integer | Identitas unik |
-| `name` | string | Nama mata kuliah |
-| `kode` | string | Kode mata kuliah, contoh: `CS 186` |
-| `dosen` | string | Nama dosen pengampu |
-| `user_id` | integer | Pemilik data |
+| Field     | Tipe    | Keterangan                         |
+| --------- | ------- | ---------------------------------- |
+| `id`      | integer | Identitas unik                     |
+| `name`    | string  | Nama mata kuliah                   |
+| `kode`    | string  | Kode mata kuliah, contoh: `CS 186` |
+| `dosen`   | string  | Nama dosen pengampu                |
+| `user_id` | integer | Pemilik data                       |
 
 **Tugas** (`tasks`)
 
-| Field | Tipe | Keterangan |
-| --- | --- | --- |
-| `id` | integer | Identitas unik |
-| `judul` | string | Judul tugas |
-| `deskripsi` | string | Deskripsi atau catatan tambahan |
-| `deadline` | datetime | Batas pengumpulan |
-| `status` | enum | `belum` atau `selesai` |
-| `mata_kuliah_id` | integer | Referensi ke mata kuliah terkait |
-| `created_at` | datetime | Waktu tugas ditambahkan |
-| `user_id` | integer | Pemilik data |
+| Field            | Tipe     | Keterangan                       |
+| ---------------- | -------- | -------------------------------- |
+| `id`             | integer  | Identitas unik                   |
+| `judul`          | string   | Judul tugas                      |
+| `deskripsi`      | string   | Deskripsi atau catatan tambahan  |
+| `deadline`       | datetime | Batas pengumpulan                |
+| `status`         | enum     | `belum` atau `selesai`           |
+| `mata_kuliah_id` | integer  | Referensi ke mata kuliah terkait |
+| `created_at`     | datetime | Waktu tugas ditambahkan          |
+| `user_id`        | integer  | Pemilik data                     |
 
 > **Format waktu.** `deadline` disimpan sebagai waktu lokal tanpa zona waktu, persis seperti keluaran input `datetime-local` (contoh: `2026-07-03T23:59`). Sementara itu `created_at` pada tugas baru berformat ISO 8601 UTC (contoh: `2026-10-23T09:00:00.000Z`). Perhatikan perbedaan ini saat Anda menghitung sisa waktu hingga deadline.
 
@@ -97,11 +97,11 @@ Struktur ini mengikuti Bagian 1 (Konteks Aplikasi) pada dokumen studi kasus. Kol
 
 Data awal sama dengan contoh pada dokumen studi kasus:
 
-| ID | Judul | Mata Kuliah | Deadline | Status |
-| --- | --- | --- | --- | --- |
-| 1 | Lab 4: Query Optimization Report | CS 186, Database Systems | 2026-07-03 23:59 | belum |
-| 2 | Project 3: BSTMap Implementation | CS 61B, Data Structures | 2026-07-02 10:00 | belum |
-| 3 | Sprint 2: Backend API Integration | CS 169, Software Engineering | 2026-07-06 23:59 | belum |
+| ID  | Judul                             | Mata Kuliah                  | Deadline         | Status |
+| --- | --------------------------------- | ---------------------------- | ---------------- | ------ |
+| 1   | Lab 4: Query Optimization Report  | CS 186, Database Systems     | 2026-07-03 23:59 | belum  |
+| 2   | Project 3: BSTMap Implementation  | CS 61B, Data Structures      | 2026-07-02 10:00 | belum  |
+| 3   | Sprint 2: Backend API Integration | CS 169, Software Engineering | 2026-07-06 23:59 | belum  |
 
 Tanggal pada data seed mengikuti dokumen, sehingga semuanya sudah lewat dari tanggal pengerjaan Anda. Untuk mencoba fitur yang Anda buat, tambahkan tugas baru dengan deadline yang dekat lewat form **Tambah Tugas**.
 
@@ -109,22 +109,22 @@ Tanggal pada data seed mengikuti dokumen, sehingga semuanya sudah lewat dari tan
 
 Semua endpoint di bawah `/api`. Endpoint bertanda "Ya" membutuhkan header `Authorization: Bearer <token>`.
 
-| Method | Path | Login | Keterangan |
-| --- | --- | --- | --- |
-| `GET` | `/health` | Tidak | Cek status server |
-| `POST` | `/auth/register` | Tidak | Daftar akun baru |
-| `POST` | `/auth/login` | Tidak | Login, mengembalikan token |
-| `GET` | `/auth/me` | Ya | Profil pengguna yang sedang login |
-| `GET` | `/courses` | Ya | Daftar mata kuliah |
-| `POST` | `/courses` | Ya | Tambah mata kuliah |
-| `PUT` | `/courses/:id` | Ya | Ubah mata kuliah |
-| `DELETE` | `/courses/:id` | Ya | Hapus mata kuliah beserta tugasnya |
-| `GET` | `/tasks` | Ya | Daftar seluruh tugas, lintas mata kuliah |
-| `GET` | `/tasks/:id` | Ya | Detail satu tugas |
-| `POST` | `/tasks` | Ya | Tambah tugas (`mata_kuliah_id`, `judul`, `deadline`, `deskripsi?`) |
-| `PUT` | `/tasks/:id` | Ya | Ubah tugas, termasuk status |
-| `DELETE` | `/tasks/:id` | Ya | Hapus tugas |
-| `POST` | `/dev/reset` | Tidak | Reset data ke seed (hanya di luar production) |
+| Method   | Path             | Login | Keterangan                                                         |
+| -------- | ---------------- | ----- | ------------------------------------------------------------------ |
+| `GET`    | `/health`        | Tidak | Cek status server                                                  |
+| `POST`   | `/auth/register` | Tidak | Daftar akun baru                                                   |
+| `POST`   | `/auth/login`    | Tidak | Login, mengembalikan token                                         |
+| `GET`    | `/auth/me`       | Ya    | Profil pengguna yang sedang login                                  |
+| `GET`    | `/courses`       | Ya    | Daftar mata kuliah                                                 |
+| `POST`   | `/courses`       | Ya    | Tambah mata kuliah                                                 |
+| `PUT`    | `/courses/:id`   | Ya    | Ubah mata kuliah                                                   |
+| `DELETE` | `/courses/:id`   | Ya    | Hapus mata kuliah beserta tugasnya                                 |
+| `GET`    | `/tasks`         | Ya    | Daftar seluruh tugas, lintas mata kuliah                           |
+| `GET`    | `/tasks/:id`     | Ya    | Detail satu tugas                                                  |
+| `POST`   | `/tasks`         | Ya    | Tambah tugas (`mata_kuliah_id`, `judul`, `deadline`, `deskripsi?`) |
+| `PUT`    | `/tasks/:id`     | Ya    | Ubah tugas, termasuk status                                        |
+| `DELETE` | `/tasks/:id`     | Ya    | Hapus tugas                                                        |
+| `POST`   | `/dev/reset`     | Tidak | Reset data ke seed (hanya di luar production)                      |
 
 ## Struktur Proyek
 
