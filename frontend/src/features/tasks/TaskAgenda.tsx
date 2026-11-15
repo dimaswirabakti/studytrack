@@ -1,7 +1,6 @@
 import { describeDay, formatMonth, groupByDay } from "../../lib/date";
 import type { DayGroup } from "../../lib/date";
 import type { Task } from "../../lib/types";
-import { useNow } from "../../lib/useNow";
 import { TaskRow } from "./TaskRow";
 
 // angka tanggal besar di gutter kiri adalah elemen khas tampilan agenda
@@ -18,23 +17,30 @@ function DayGutter({ date }: { date: Date }) {
   );
 }
 
-function AgendaDay({ group, now }: { group: DayGroup<Task>; now: Date }) {
+interface AgendaDayProps {
+  group: DayGroup<Task>;
+  now: Date;
+  elapsedMs: number;
+  idPrefix: string;
+}
+
+function AgendaDay({ group, now, elapsedMs, idPrefix }: AgendaDayProps) {
   const { label, detail } = describeDay(group.date, now);
-  const headingId = `day-${group.key}`;
+  const headingId = `${idPrefix}-${group.key}`;
 
   return (
     <li className="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-4 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-x-8">
       <DayGutter date={group.date} />
       <section aria-labelledby={headingId}>
         <header className="flex flex-wrap items-baseline gap-x-2 border-b border-zinc-300 pb-2 dark:border-zinc-700">
-          <h2 id={headingId} className="font-semibold">
+          <h3 id={headingId} className="font-semibold">
             {label}
-          </h2>
+          </h3>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">{detail}</p>
         </header>
         <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
           {group.items.map((task) => (
-            <TaskRow key={task.id} task={task} />
+            <TaskRow key={task.id} task={task} elapsedMs={elapsedMs} />
           ))}
         </ul>
       </section>
@@ -42,14 +48,27 @@ function AgendaDay({ group, now }: { group: DayGroup<Task>; now: Date }) {
   );
 }
 
-export function TaskAgenda({ tasks }: { tasks: Task[] }) {
-  const now = useNow();
+interface TaskAgendaProps {
+  tasks: Task[];
+  now: Date;
+  elapsedMs: number;
+  idPrefix: string;
+}
+
+// urutan tugas mengikuti backend, agenda hanya mengelompokkan tugas berurutan per hari
+export function TaskAgenda({ tasks, now, elapsedMs, idPrefix }: TaskAgendaProps) {
   const groups = groupByDay(tasks, (task) => new Date(task.deadline));
 
   return (
-    <ol className="grid gap-12">
+    <ol className="grid gap-10">
       {groups.map((group) => (
-        <AgendaDay key={group.key} group={group} now={now} />
+        <AgendaDay
+          key={group.key}
+          group={group}
+          now={now}
+          elapsedMs={elapsedMs}
+          idPrefix={idPrefix}
+        />
       ))}
     </ol>
   );
