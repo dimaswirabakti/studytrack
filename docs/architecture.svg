@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="700" viewBox="0 0 960 700" role="img" aria-labelledby="title desc">
+  <title id="title">Arsitektur StudyTrack</title>
+  <desc id="desc">Perjalanan request GET /api/tasks dari browser, lewat Vercel, ke function Express di region Singapura, lalu ke Neon Postgres. Gemini dipanggil hanya saat pengguna meminta rencana kerja.</desc>
+  <style>
+    .bg { fill: #fafafa; }
+    .ink { fill: #18181b; }
+    .muted { fill: #71717a; }
+    .rule { stroke: #d4d4d8; }
+    .track { stroke: #a1a1aa; }
+    .dot { fill: #fafafa; stroke: #18181b; }
+    .frame { fill: none; stroke: #d4d4d8; }
+    .accent-fill { fill: #fef3c7; stroke: #d97706; }
+    .accent-ink { fill: #92400e; }
+    .dash { fill: none; stroke: #a1a1aa; stroke-dasharray: 5 5; }
+    .chip { fill: #f4f4f5; stroke: #d4d4d8; }
+    .sans { font-family: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .mono { font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #09090b; }
+      .ink { fill: #f4f4f5; }
+      .muted { fill: #a1a1aa; }
+      .rule { stroke: #3f3f46; }
+      .track { stroke: #52525b; }
+      .dot { fill: #09090b; stroke: #f4f4f5; }
+      .frame { stroke: #3f3f46; }
+      .accent-fill { fill: #2a1f0a; stroke: #f59e0b; }
+      .accent-ink { fill: #fcd34d; }
+      .dash { stroke: #71717a; }
+      .chip { fill: #18181b; stroke: #3f3f46; }
+    }
+  </style>
+
+  <rect class="bg" width="960" height="700" rx="12"/>
+
+  <text class="ink sans" x="40" y="58" font-size="20" font-weight="600">Perjalanan satu request</text>
+  <text class="muted mono" x="920" y="58" font-size="13" text-anchor="end">GET /api/tasks</text>
+  <line class="rule" x1="40" y1="78" x2="920" y2="78" stroke-width="1.5"/>
+
+  <line class="track" x1="128" y1="128" x2="128" y2="520" stroke-width="1.5"/>
+
+  <text class="ink sans" x="108" y="146" font-size="40" font-weight="600" text-anchor="end">1</text>
+  <circle class="dot" cx="128" cy="128" r="5" stroke-width="1.5"/>
+  <text class="ink sans" x="152" y="128" font-size="16" font-weight="600">Browser</text>
+  <text class="muted sans" x="152" y="152" font-size="13">React 19, TanStack Query, Tailwind CSS v4, React Router</text>
+  <text class="muted mono" x="920" y="128" font-size="12" text-anchor="end">ambil ulang tiap 60 detik</text>
+  <line class="rule" x1="152" y1="178" x2="920" y2="178"/>
+
+  <text class="ink sans" x="108" y="226" font-size="40" font-weight="600" text-anchor="end">2</text>
+  <circle class="dot" cx="128" cy="208" r="5" stroke-width="1.5"/>
+  <text class="ink sans" x="152" y="208" font-size="16" font-weight="600">Vercel, project frontend</text>
+  <text class="muted sans" x="152" y="232" font-size="13">File statis hasil vite build. Rewrite meneruskan /api/* ke project backend.</text>
+  <text class="muted mono" x="920" y="208" font-size="12" text-anchor="end">satu origin, tanpa CORS</text>
+  <line class="rule" x1="152" y1="258" x2="920" y2="258"/>
+
+  <text class="ink sans" x="108" y="306" font-size="40" font-weight="600" text-anchor="end">3</text>
+  <circle class="dot" cx="128" cy="288" r="5" stroke-width="1.5"/>
+  <text class="ink sans" x="152" y="288" font-size="16" font-weight="600">Vercel Function</text>
+  <rect class="chip" x="290" y="273" width="44" height="21" rx="4"/>
+  <text class="ink mono" x="312" y="288" font-size="12" text-anchor="middle">sin1</text>
+  <text class="muted sans" x="152" y="312" font-size="13">Express 5 di Node 24, satu function dengan Fluid compute</text>
+
+  <rect class="frame" x="152" y="332" width="488" height="36" rx="6"/>
+  <text class="ink mono" x="168" y="355" font-size="13">routes</text>
+  <text class="muted sans" x="290" y="355" font-size="13">validasi zod, auth JWT, format { error }</text>
+
+  <rect class="accent-fill" x="152" y="376" width="488" height="36" rx="6" stroke-width="1.5"/>
+  <text class="accent-ink mono" x="168" y="399" font-size="13" font-weight="600">domain</text>
+  <text class="accent-ink mono" x="290" y="399" font-size="13">categorizeTask(task, now)</text>
+  <text class="accent-ink sans" x="624" y="399" font-size="12" text-anchor="end">kategori + sisa_ms</text>
+
+  <rect class="frame" x="152" y="420" width="488" height="36" rx="6"/>
+  <text class="ink mono" x="168" y="443" font-size="13">repositories</text>
+  <text class="muted sans" x="290" y="443" font-size="13">SQL berparameter lewat pg</text>
+
+  <path class="dash" d="M640 350 H 690" stroke-width="1.5"/>
+  <rect class="dash" x="690" y="332" width="230" height="124" rx="6" stroke-width="1.5"/>
+  <text class="ink sans" x="708" y="360" font-size="14" font-weight="600">Gemini API</text>
+  <text class="muted mono" x="708" y="382" font-size="12">gemini-3.1-flash-lite</text>
+  <text class="muted sans" x="708" y="410" font-size="12">Dipanggil hanya saat pengguna</text>
+  <text class="muted sans" x="708" y="428" font-size="12">menekan Susun rencana.</text>
+  <text class="muted sans" x="708" y="446" font-size="12">Hasilnya disimpan di task_plans.</text>
+
+  <line class="rule" x1="152" y1="480" x2="920" y2="480"/>
+
+  <text class="ink sans" x="108" y="538" font-size="40" font-weight="600" text-anchor="end">4</text>
+  <circle class="dot" cx="128" cy="520" r="5" stroke-width="1.5"/>
+  <text class="ink sans" x="152" y="520" font-size="16" font-weight="600">Neon Postgres 17</text>
+  <rect class="chip" x="306" y="505" width="82" height="21" rx="4"/>
+  <text class="ink mono" x="347" y="520" font-size="12" text-anchor="middle">Singapura</text>
+  <text class="muted sans" x="152" y="544" font-size="13">users, courses, tasks, task_plans. Kolom deadline bertipe timestamptz.</text>
+  <text class="muted mono" x="920" y="520" font-size="12" text-anchor="end">pg pool + attachDatabasePool</text>
+
+  <line class="rule" x1="40" y1="590" x2="920" y2="590" stroke-width="1.5"/>
+  <text class="ink sans" x="40" y="626" font-size="14" font-weight="600">Setiap push ke main</text>
+  <text class="muted sans" x="40" y="652" font-size="13">GitHub Actions menjalankan format check, lint, typecheck, 49 test (Postgres 17, zona waktu UTC), dan build.</text>
+  <text class="muted sans" x="40" y="674" font-size="13">Setelah itu Vercel men-deploy kedua project. Migrasi database dijalankan manual lewat pnpm db:migrate.</text>
+</svg>

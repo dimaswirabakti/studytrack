@@ -1,168 +1,126 @@
-# StudyTrack Baseline
+# StudyTrack
 
-Starter kit untuk bonus **Implementasi kode nyata** pada studi kasus seleksi Software Engineer, Academya Arkavidia 11.0.
+[![CI](https://github.com/dimaswirabakti/studytrack/actions/workflows/ci.yml/badge.svg)](https://github.com/dimaswirabakti/studytrack/actions/workflows/ci.yml)
 
-Isinya adalah kondisi StudyTrack saat ini: empat modul yang sudah berjalan (autentikasi, manajemen mata kuliah, manajemen tugas, dan halaman daftar tugas). Fitur **Reminder Tugas Mendekati Deadline** sengaja belum ada karena itulah yang perlu Anda rancang dan kerjakan.
+StudyTrack mencatat tugas kuliah per mata kuliah. Tugas yang deadline-nya tinggal kurang dari 24 jam naik ke urutan paling atas dengan hitung mundur, dan tugas yang sudah lewat deadline diberi tanda terlambat. Repo ini adalah jawaban saya untuk studi kasus Software Engineer Academya Arkavidia 11.0, dibangun di atas starter kit dari panitia.
 
-> Starter kit ini bersifat opsional. Anda boleh memakai stack lain selama struktur datanya konsisten dengan Bagian 1 (Konteks Aplikasi) pada dokumen studi kasus.
+Aplikasi live ada di **https://studytrack-app-ten.vercel.app**. Masuk dengan `demo@studytrack.test` / `demo1234`, atau tekan Coba akun demo di halaman masuk.
 
-## Stack
+![Halaman Tugas StudyTrack dengan bagian Mendekati deadline dan Terlambat](docs/screenshot.png)
 
-- **Backend:** Node.js + Express. Data disimpan di file JSON, jadi tidak perlu memasang database terpisah.
-- **Frontend:** React + Vite.
+## Fitur reminder deadline
 
-## Prasyarat
+Halaman Tugas membagi tugas yang belum selesai ke tiga bagian. Mendekati deadline selalu berada paling atas dengan latar amber, dan setiap tugas di dalamnya membawa badge seperti "Sisa 2 jam 59 menit". Terlambat memuat tugas yang sudah lewat deadline dengan badge merah seperti "Terlambat 3 hari". Mendatang memuat sisanya. Tugas yang sudah selesai pindah ke bagian Selesai di bawah, yang bisa dibuka dan ditutup.
 
-- Node.js 20.19 atau lebih baru (atau 22.12+), sesuai syarat Vite 8.
-- npm.
+Penanda berlaku untuk semua tugas milik pengguna yang sedang masuk, dari mata kuliah mana pun. Daftar diambil ulang setiap 60 detik dan setiap kali tab kembali aktif, sehingga tugas bisa berpindah dari Mendatang ke Mendekati deadline tanpa reload.
 
-## Fitur yang Sudah Tersedia
+Di luar kebutuhan studi kasus, setiap tugas yang belum selesai bisa dibuatkan rencana kerja oleh Gemini. Rencananya berisi 2 sampai 6 langkah dengan estimasi menit, dan aplikasi memberi peringatan kalau total estimasinya lebih lama dari sisa waktu.
 
-- Registrasi, login, dan logout. Password di-hash dengan bcrypt dan sesi memakai JWT.
-- Manajemen Mata Kuliah: lihat, tambah, dan hapus di UI. Endpoint ubah (`PUT`) juga tersedia di API.
-- Manajemen Tugas per mata kuliah: lihat, tambah, ubah status (belum/selesai), dan hapus di UI. Endpoint ubah (`PUT`) juga tersedia di API.
-- Halaman Daftar Tugas: seluruh tugas pengguna lintas mata kuliah, terurut dari `created_at` terbaru.
+## Arsitektur
 
-## Cara Menjalankan
+![Diagram perjalanan request dari browser ke Vercel, Express, dan Neon Postgres](docs/architecture.svg)
 
-### 1. Backend
+Frontend dan backend adalah dua project Vercel dari satu repo. Browser hanya berbicara dengan domain frontend, lalu rewrite di `frontend/vercel.json` meneruskan `/api/*` ke function Express. Kode frontend memakai `baseURL: "/api"` yang sama di lokal (lewat proxy Vite) dan di production, dan backend tidak butuh CORS. Function dan database sama-sama berada di Singapura.
+
+Backend punya tiga lapis. `routes/` mengurus HTTP, validasi zod, dan autentikasi. `domain/` berisi logika murni yang tidak menyentuh database ataupun jam sistem, termasuk `categorizeTask`. `repositories/` berisi query SQL. Karena waktu sekarang masuk sebagai parameter, logika kategori bisa diuji dengan waktu yang ditentukan sendiri.
+
+## Aturan kategori
+
+![Sumbu sisa waktu yang membagi kategori terlambat, mendekati deadline, dan normal](docs/timeline.svg)
+
+| Kondisi                                 | Kategori             | Tampilan                        |
+| --------------------------------------- | -------------------- | ------------------------------- |
+| `sisa < 0`                              | `terlambat`          | Bagian Terlambat, badge merah   |
+| `0 ≤ sisa < 24 jam`                     | `mendekati_deadline` | Bagian paling atas, badge amber |
+| `sisa ≥ 24 jam`                         | `normal`             | Bagian Mendatang, tanpa badge   |
+| status `selesai`, berapa pun sisa waktu | `selesai`            | Bagian Selesai, tanpa penanda   |
+
+Dokumen kebutuhan tidak membahas beberapa kasus tepi, jadi saya memutuskannya sendiri:
+
+1. Sisa tepat 24 jam termasuk normal, karena syaratnya "kurang dari 24 jam".
+2. Pada detik deadline, tugas belum terlambat. Terlambat berarti deadline sudah terlewati.
+3. Tugas berstatus selesai tidak diberi penanda, walaupun deadline-nya dekat atau sudah lewat.
+4. Deadline lama dari starter kit tidak menyimpan zona waktu, jadi migrasi menganggapnya WIB.
+
+## Perubahan per layer
+
+| Layer    | Perubahan                                                                                                                                                     | File utama                                                           |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Database | Kolom `deadline` berubah dari `timestamp` ke `timestamptz`, index `(user_id, deadline)`. Kategori tidak disimpan karena nilainya ikut bergeser seiring waktu. | `backend/migrations/002_deadline_timestamptz.sql`                    |
+| Backend  | `categorizeTask` dan `categorizeTasks`. `GET /api/tasks` mengirim `kategori`, `sisa_ms`, dan `server_time` dengan urutan yang sudah final.                    | `backend/src/domain/task-category.ts`, `backend/src/routes/tasks.ts` |
+| Frontend | Bagian per kategori, badge hitung mundur, pengambilan ulang tiap 60 detik. Frontend memakai kategori dari backend tanpa menghitung ulang.                     | `frontend/src/features/tasks/TasksPage.tsx`, `DeadlineBadge.tsx`     |
+
+Starter kit menyimpan deadline seperti `2026-07-03T23:59`, tanpa zona waktu. Di laptop yang memakai WIB hasilnya terlihat benar, tetapi server Vercel berjalan dalam UTC sehingga sisa waktu meleset 7 jam. Sekarang database menyimpan waktu absolut, frontend mengirim deadline dalam ISO 8601 UTC, dan backend menolak deadline yang tidak menyertakan zona waktu.
+
+Badge hitung mundur memakai `sisa_ms` dari server dikurangi waktu yang sudah berjalan sejak data diambil, sehingga jam perangkat yang salah tidak memengaruhi angkanya.
+
+## Menjalankan di lokal
+
+Siapkan Node 24.12 atau lebih baru, pnpm 11, dan satu database Postgres. Saya memakai branch Neon terpisah untuk development.
 
 ```bash
-cd backend
-cp .env.example .env
-npm install
-npm run dev
+pnpm install
+cp backend/.env.example backend/.env
+pnpm --filter @studytrack/backend db:migrate
+pnpm --filter @studytrack/backend db:seed
+pnpm dev
 ```
 
-Backend berjalan di `http://localhost:4000`. Port dan `JWT_SECRET` bisa diatur lewat file `.env`.
+Isi `DATABASE_URL` dan `JWT_SECRET` di `backend/.env` sebelum menjalankan migrasi. `GEMINI_API_KEY` boleh kosong, dan panel rencana AI akan menampilkan keterangan bahwa fitur belum aktif. Frontend berjalan di http://localhost:5173 dan backend di http://localhost:4000.
 
-### 2. Frontend
+Data seed berisi tiga tugas dari dokumen studi kasus ditambah lima tugas yang deadline-nya dihitung dari waktu seed dijalankan, supaya semua kategori langsung terlihat.
 
-Buka terminal baru, lalu jalankan:
+## Test dan CI
 
 ```bash
-cd frontend
-npm install
-npm run dev
+pnpm test
 ```
 
-Frontend berjalan di `http://localhost:5173`. Selama mode development, request `/api/*` otomatis diteruskan ke backend oleh proxy Vite.
+Ada 49 test. Unit test mencakup aturan kategori dengan data dokumen studi kasus, format label waktu, prompt dan parsing jawaban Gemini, serta rate limiter. Sebelas integration test memanggil API lewat Supertest ke Postgres sungguhan dengan waktu yang dibekukan, termasuk pengecekan bahwa pengguna lain tidak bisa melihat atau menambah tugas ke mata kuliah milik orang lain.
 
-### 3. Akun Demo
+Integration test hanya membaca `TEST_DATABASE_URL` dari `backend/.env.test` (contohnya ada di `backend/.env.test.example`), sehingga test tidak pernah mengosongkan database development atau production. Kalau variabel itu kosong, integration test dilewati.
 
-File `backend/db.json` dibuat otomatis saat backend pertama kali dijalankan dan langsung berisi data seed. Anda bisa masuk dengan akun berikut:
+GitHub Actions menjalankan format check, lint, typecheck, test, dan build di setiap push dan pull request. Runner memakai Postgres 17 dan zona waktu UTC, sama seperti production.
 
-| Email                  | Password   |
-| ---------------------- | ---------- |
-| `demo@studytrack.test` | `demo1234` |
+## Deploy
 
-Untuk mengembalikan data ke kondisi seed kapan pun:
+| Project Vercel | Root directory | Environment variable                                                                                                    |
+| -------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Backend        | `backend`      | `DATABASE_URL`, `JWT_SECRET`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `NODE_ENV=production`, `ENABLE_EXPERIMENTAL_COREPACK=1` |
+| Frontend       | `frontend`     | `ENABLE_EXPERIMENTAL_COREPACK=1`                                                                                        |
+
+Vercel men-deploy kedua project setiap ada push ke `main`. Migrasi database production saya jalankan manual dari laptop:
 
 ```bash
-curl -X POST http://localhost:4000/api/dev/reset
+DATABASE_URL='<connection string production>' pnpm --filter @studytrack/backend db:migrate
 ```
 
-Endpoint ini hanya aktif selama `NODE_ENV` bukan `production`.
+Endpoint `POST /api/dev/reset` hanya terdaftar di luar production.
 
-## Struktur Data
+## Batasan yang saya ketahui
 
-Struktur ini mengikuti Bagian 1 (Konteks Aplikasi) pada dokumen studi kasus. Kolom `user_id` ditambahkan di luar daftar itu supaya setiap mahasiswa hanya melihat datanya sendiri.
+- Rate limit rencana AI (5 permintaan per 10 menit per pengguna) disimpan di memori function, jadi tidak dibagi antar instance Vercel.
+- Ambang 24 jam masih berupa konstanta `DUE_SOON_WINDOW_MS` dan belum bisa diatur pengguna.
+- Penanda hanya terlihat saat aplikasi dibuka. Belum ada notifikasi email atau push.
+- Token login masih disimpan di `localStorage`, sama seperti starter kit.
 
-**Mata kuliah** (`courses`)
-
-| Field     | Tipe    | Keterangan                         |
-| --------- | ------- | ---------------------------------- |
-| `id`      | integer | Identitas unik                     |
-| `name`    | string  | Nama mata kuliah                   |
-| `kode`    | string  | Kode mata kuliah, contoh: `CS 186` |
-| `dosen`   | string  | Nama dosen pengampu                |
-| `user_id` | integer | Pemilik data                       |
-
-**Tugas** (`tasks`)
-
-| Field            | Tipe     | Keterangan                       |
-| ---------------- | -------- | -------------------------------- |
-| `id`             | integer  | Identitas unik                   |
-| `judul`          | string   | Judul tugas                      |
-| `deskripsi`      | string   | Deskripsi atau catatan tambahan  |
-| `deadline`       | datetime | Batas pengumpulan                |
-| `status`         | enum     | `belum` atau `selesai`           |
-| `mata_kuliah_id` | integer  | Referensi ke mata kuliah terkait |
-| `created_at`     | datetime | Waktu tugas ditambahkan          |
-| `user_id`        | integer  | Pemilik data                     |
-
-> **Format waktu.** `deadline` disimpan sebagai waktu lokal tanpa zona waktu, persis seperti keluaran input `datetime-local` (contoh: `2026-07-03T23:59`). Sementara itu `created_at` pada tugas baru berformat ISO 8601 UTC (contoh: `2026-10-23T09:00:00.000Z`). Perhatikan perbedaan ini saat Anda menghitung sisa waktu hingga deadline.
-
-## Data Seed
-
-Data awal sama dengan contoh pada dokumen studi kasus:
-
-| ID  | Judul                             | Mata Kuliah                  | Deadline         | Status |
-| --- | --------------------------------- | ---------------------------- | ---------------- | ------ |
-| 1   | Lab 4: Query Optimization Report  | CS 186, Database Systems     | 2026-07-03 23:59 | belum  |
-| 2   | Project 3: BSTMap Implementation  | CS 61B, Data Structures      | 2026-07-02 10:00 | belum  |
-| 3   | Sprint 2: Backend API Integration | CS 169, Software Engineering | 2026-07-06 23:59 | belum  |
-
-Tanggal pada data seed mengikuti dokumen, sehingga semuanya sudah lewat dari tanggal pengerjaan Anda. Untuk mencoba fitur yang Anda buat, tambahkan tugas baru dengan deadline yang dekat lewat form **Tambah Tugas**.
-
-## Ringkasan API
-
-Semua endpoint di bawah `/api`. Endpoint bertanda "Ya" membutuhkan header `Authorization: Bearer <token>`.
-
-| Method   | Path             | Login | Keterangan                                                         |
-| -------- | ---------------- | ----- | ------------------------------------------------------------------ |
-| `GET`    | `/health`        | Tidak | Cek status server                                                  |
-| `POST`   | `/auth/register` | Tidak | Daftar akun baru                                                   |
-| `POST`   | `/auth/login`    | Tidak | Login, mengembalikan token                                         |
-| `GET`    | `/auth/me`       | Ya    | Profil pengguna yang sedang login                                  |
-| `GET`    | `/courses`       | Ya    | Daftar mata kuliah                                                 |
-| `POST`   | `/courses`       | Ya    | Tambah mata kuliah                                                 |
-| `PUT`    | `/courses/:id`   | Ya    | Ubah mata kuliah                                                   |
-| `DELETE` | `/courses/:id`   | Ya    | Hapus mata kuliah beserta tugasnya                                 |
-| `GET`    | `/tasks`         | Ya    | Daftar seluruh tugas, lintas mata kuliah                           |
-| `GET`    | `/tasks/:id`     | Ya    | Detail satu tugas                                                  |
-| `POST`   | `/tasks`         | Ya    | Tambah tugas (`mata_kuliah_id`, `judul`, `deadline`, `deskripsi?`) |
-| `PUT`    | `/tasks/:id`     | Ya    | Ubah tugas, termasuk status                                        |
-| `DELETE` | `/tasks/:id`     | Ya    | Hapus tugas                                                        |
-| `POST`   | `/dev/reset`     | Tidak | Reset data ke seed (hanya di luar production)                      |
-
-## Struktur Proyek
+## Struktur repo
 
 ```
-studytrack-baseline/
-├── backend/
-│   ├── server.js            # Entry point Express
-│   ├── config.js            # Membaca .env (PORT, JWT_SECRET)
-│   ├── db.js                # Penyimpanan JSON file dan data seed
-│   ├── middleware/auth.js   # Verifikasi JWT
-│   └── routes/
-│       ├── auth.js          # Register, login, profil
-│       ├── courses.js       # CRUD mata kuliah
-│       └── tasks.js         # CRUD tugas (ada catatan untuk peserta)
-└── frontend/
-    └── src/
-        ├── main.jsx, App.jsx, AuthContext.jsx, api.js
-        ├── components/
-        │   ├── Navbar.jsx
-        │   └── TaskCard.jsx # Card tugas (ada catatan untuk peserta)
-        └── pages/
-            ├── Login.jsx, Register.jsx
-            ├── Courses.jsx
-            └── Tasks.jsx    # Halaman Daftar Tugas
+backend/
+  migrations/          file SQL berurutan, dicatat di tabel schema_migrations
+  src/ai/              prompt, schema, dan pemanggil Gemini
+  src/domain/          logika kategori deadline
+  src/repositories/    query SQL per tabel
+  src/routes/          handler HTTP
+  test/                integration test
+frontend/
+  src/features/tasks/  halaman Tugas, agenda, badge, panel rencana
+  src/features/courses/
+  src/lib/             klien API, tipe data, format tanggal
+docs/                  diagram dan screenshot README
 ```
 
-## Titik Awal Fitur "Reminder Tugas Mendekati Deadline"
+## Kredit
 
-Cari komentar bertuliskan **"CATATAN UNTUK PESERTA STUDI KASUS"** pada dua file berikut:
-
-- `backend/routes/tasks.js`
-- `frontend/src/components/TaskCard.jsx`
-
-Keduanya hanya penunjuk titik yang relevan. Anda tidak harus menaruh logika di sana, silakan sesuaikan dengan rancangan teknis Anda sendiri.
-
-## Catatan
-
-- Starter kit ini sengaja dibuat minimal. Fokus utamanya adalah fitur reminder deadline. Bonus lain pada dokumen (pemanfaatan AI/LLM, deployment, dan Git history yang rapi) bersifat opsional.
-- Anda boleh memigrasikan penyimpanan dari file JSON ke database sungguhan (SQLite, PostgreSQL, dan sebagainya), tetapi itu tidak wajib.
-- **Git history.** Salin starter kit ini ke repositori Anda sendiri dan commit kondisi awalnya lebih dulu, lalu kerjakan fitur di branch terpisah dengan commit message yang deskriptif.
-- **Deployment.** Proxy Vite hanya berlaku saat `npm run dev`, jadi frontend hasil build perlu diarahkan ke URL backend (misalnya lewat `baseURL` di `frontend/src/api.js`). Ganti juga `JWT_SECRET` dengan nilai acak dan atur `NODE_ENV=production`. Penyimpanan file di layanan gratis seperti Render atau Railway umumnya bersifat sementara, sehingga `db.json` bisa hilang saat redeploy.
+Starter kit [StudyTrack](https://github.com/ZulfaNurhuda/StudyTrack) disediakan panitia Academya Arkavidia 11.0. Ikon dari Phosphor, huruf Poppins dan Geist Mono.
