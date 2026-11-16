@@ -18,15 +18,23 @@ Di luar kebutuhan studi kasus, setiap tugas yang belum selesai bisa dibuatkan re
 
 ## Arsitektur
 
-![Diagram perjalanan request dari browser ke Vercel, Express, dan Neon Postgres](docs/architecture.svg)
+![Diagram arsitektur dari browser ke Vercel, Express, dan Neon Postgres, beserta jalur deploy](docs/architecture.png)
 
 Frontend dan backend adalah dua project Vercel dari satu repo. Browser hanya berbicara dengan domain frontend, lalu rewrite di `frontend/vercel.json` meneruskan `/api/*` ke function Express. Kode frontend memakai `baseURL: "/api"` yang sama di lokal (lewat proxy Vite) dan di production, dan backend tidak butuh CORS. Function dan database sama-sama berada di Singapura.
 
 Backend punya tiga lapis. `routes/` mengurus HTTP, validasi zod, dan autentikasi. `domain/` berisi logika murni yang tidak menyentuh database ataupun jam sistem, termasuk `categorizeTask`. `repositories/` berisi query SQL. Karena waktu sekarang masuk sebagai parameter, logika kategori bisa diuji dengan waktu yang ditentukan sendiri.
 
+Urutan pemanggilan saat halaman Tugas dibuka:
+
+![Sequence diagram GET /api/tasks dari browser sampai penanda deadline tampil](docs/sequence.png)
+
+## Tech stack
+
+![Daftar tech stack frontend, backend, data dan infrastruktur, serta tooling](docs/tech-stack.png)
+
 ## Aturan kategori
 
-![Sumbu sisa waktu yang membagi kategori terlambat, mendekati deadline, dan normal](docs/timeline.svg)
+![Sumbu sisa waktu yang membagi kategori terlambat, mendekati deadline, dan normal](docs/deadline-rules.png)
 
 | Kondisi                                 | Kategori             | Tampilan                        |
 | --------------------------------------- | -------------------- | ------------------------------- |
@@ -119,6 +127,7 @@ frontend/
   src/features/courses/
   src/lib/             klien API, tipe data, format tanggal
 docs/                  diagram dan screenshot README
+  diagrams/            sumber .excalidraw, bisa dibuka di excalidraw.com
 ```
 
 ## Kredit
