@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import { Router } from "express";
 import { z } from "zod";
 import { isUniqueViolation } from "../db/errors.js";
+import { env } from "../config.js";
+import { isDemoEmail, refreshDemoData } from "../db/seed.js";
 import { HttpError } from "../lib/http-error.js";
 import { parseOrThrow } from "../lib/validation.js";
 import { currentUser, requireAuth, signToken } from "../middleware/auth.js";
@@ -49,6 +51,11 @@ router.post("/login", async (req, res) => {
 
   if (!user || !(await bcrypt.compare(input.password, user.password_hash))) {
     throw new HttpError(401, "Email atau password salah.");
+  }
+
+  // data demo memakai deadline relatif, jadi disegarkan setiap login supaya semua kategori tetap terlihat
+  if (env.NODE_ENV === "production" && isDemoEmail(user.email)) {
+    await refreshDemoData(user.id);
   }
 
   const publicUser = { id: user.id, nama: user.nama, email: user.email };

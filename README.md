@@ -76,7 +76,7 @@ pnpm dev
 
 Isi `DATABASE_URL` dan `JWT_SECRET` di `backend/.env` sebelum menjalankan migrasi. `GEMINI_API_KEY` boleh kosong, dan panel rencana AI akan menampilkan keterangan bahwa fitur belum aktif. Frontend berjalan di http://localhost:5173 dan backend di http://localhost:4000.
 
-Data seed berisi tiga tugas dari dokumen studi kasus ditambah lima tugas yang deadline-nya dihitung dari waktu seed dijalankan, supaya semua kategori langsung terlihat.
+Data seed berisi tiga tugas dari dokumen studi kasus ditambah lima tugas yang deadline-nya dihitung dari waktu seed dijalankan, supaya semua kategori langsung terlihat. Karena deadline-nya relatif, data akun demo di production disegarkan otomatis setiap kali akun demo login. Untuk menyegarkannya manual tanpa menyentuh akun lain, jalankan `pnpm --filter @studytrack/backend db:reset-demo`.
 
 ## Test dan CI
 
@@ -84,7 +84,7 @@ Data seed berisi tiga tugas dari dokumen studi kasus ditambah lima tugas yang de
 pnpm test
 ```
 
-Ada 49 test. Unit test mencakup aturan kategori dengan data dokumen studi kasus, format label waktu, prompt dan parsing jawaban Gemini, serta rate limiter. Sebelas integration test memanggil API lewat Supertest ke Postgres sungguhan dengan waktu yang dibekukan, termasuk pengecekan bahwa pengguna lain tidak bisa melihat atau menambah tugas ke mata kuliah milik orang lain.
+Ada 50 test. Unit test mencakup aturan kategori dengan data dokumen studi kasus, format label waktu, prompt dan parsing jawaban Gemini, serta rate limiter. Dua belas integration test memanggil API lewat Supertest ke Postgres sungguhan dengan waktu yang dibekukan, termasuk pengecekan bahwa pengguna lain tidak bisa melihat atau menambah tugas ke mata kuliah milik orang lain, dan bahwa penyegaran data demo tidak menyentuh akun lain.
 
 Integration test hanya membaca `TEST_DATABASE_URL` dari `backend/.env.test` (contohnya ada di `backend/.env.test.example`), sehingga test tidak pernah mengosongkan database development atau production. Kalau variabel itu kosong, integration test dilewati.
 

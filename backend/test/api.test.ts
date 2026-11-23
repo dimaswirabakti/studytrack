@@ -5,7 +5,7 @@ import type { StudyPlan } from "../src/ai/study-plan.js";
 import app from "../src/app.js";
 import { runMigrations } from "../src/db/migrator.js";
 import { pool } from "../src/db/pool.js";
-import { resetDatabase } from "../src/db/seed.js";
+import { refreshDemoData, resetDatabase } from "../src/db/seed.js";
 
 // generator ai diganti versi palsu supaya test tidak memanggil api gemini
 vi.mock("../src/ai/plan-generator.js", () => ({
@@ -192,6 +192,40 @@ describe.runIf(process.env.TEST_DATABASE_URL)("api studytrack", () => {
         .post("/api/tasks/8/plan")
         .set("Authorization", `Bearer ${await login()}`);
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe("penyegaran data demo", () => {
+    it("mengembalikan tugas demo relatif terhadap waktu sekarang tanpa menyentuh akun lain", async () => {
+      const other = await request(app)
+        .post("/api/auth/register")
+        .send({ nama: "Ani", email: "ani@studytrack.test", password: "rahasia1" });
+      const otherToken = (other.body as { token: string }).token;
+      const course = await request(app)
+        .post("/api/courses")
+        .set("Authorization", `Bearer ${otherToken}`)
+        .send({ name: "Kalkulus" });
+      expect(course.status).toBe(201);
+
+      // seminggu kemudian tugas relatif sudah basi, lalu data demo disegarkan
+      const later = new Date(NOW.getTime() + 7 * 24 * 60 * 60 * 1000);
+      vi.setSystemTime(later);
+      await refreshDemoData(1, later);
+
+      const { tasks } = await listTasks(await login());
+      expect(tasks).toHaveLength(8);
+      expect(tasks.find((task) => task.judul === "Kuis Pohon AVL")?.kategori).toBe(
+        "mendekati_deadline",
+      );
+
+      // token lama sudah kedaluwarsa setelah waktu dimajukan, jadi akun lain login ulang
+      const otherCourses = await request(app)
+        .get("/api/courses")
+        .set(
+          "Authorization",
+          `Bearer ${await login({ email: "ani@studytrack.test", password: "rahasia1" })}`,
+        );
+      expect((otherCourses.body as { courses: unknown[] }).courses).toHaveLength(1);
     });
   });
 
