@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
+import type { PoolClient } from "pg";
 import { pool } from "./pool.js";
 
 // data awal sama dengan contoh data pada dokumen studi kasus
-const DEMO_USER = {
+export const DEMO_USER = {
   nama: "Demo Mahasiswa",
   email: "demo@studytrack.test",
   password: "demo1234",
@@ -94,46 +95,39 @@ function demoTasks(now: Date): SeedTask[] {
   ];
 }
 
-// menghapus seluruh data lalu mengisi ulang dengan data seed
-export async function resetDatabase(): Promise<void> {
-  const passwordHash = await bcrypt.hash(DEMO_USER.password, 10);
-  const client = await pool.connect();
+// mengisi mata kuliah dan tugas demo milik satu user, deadline relatif dihitung dari now
+async function insertDemoContent(client: PoolClient, userId: number, now: Date): Promise<void> {
+  const courseIds: number[] = [];
+  for (const course of DEMO_COURSES) {
+    const { rows } = await client.query<{ id: number }>(
+      "insert into courses (user_id, name, kode, dosen) values ($1, $2, $3, $4) returning id",
+      [userId, course.name, course.kode, course.dosen],
+    );
+    courseIds.push(rows[0]!.id);
+  }
 
+  for (const task of [...SAMPLE_TASKS, ...demoTasks(now)]) {
+    await client.query(
+      `insert into tasks (user_id, mata_kuliah_id, judul, deskripsi, deadline, created_at, status)
+       values ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        userId,
+        courseIds[task.courseIndex],
+        task.judul,
+        task.deskripsi,
+        task.deadline,
+        task.createdAt,
+        task.status ?? "belum",
+      ],
+    );
+  }
+}
+
+async function inTransaction(work: (client: PoolClient) => Promise<void>): Promise<void> {
+  const client = await pool.connect();
   try {
     await client.query("begin");
-    await client.query("truncate table tasks, courses, users restart identity cascade");
-
-    const { rows: users } = await client.query<{ id: number }>(
-      "insert into users (nama, email, password_hash) values ($1, $2, $3) returning id",
-      [DEMO_USER.nama, DEMO_USER.email, passwordHash],
-    );
-    const userId = users[0]!.id;
-
-    const courseIds: number[] = [];
-    for (const course of DEMO_COURSES) {
-      const { rows } = await client.query<{ id: number }>(
-        "insert into courses (user_id, name, kode, dosen) values ($1, $2, $3, $4) returning id",
-        [userId, course.name, course.kode, course.dosen],
-      );
-      courseIds.push(rows[0]!.id);
-    }
-
-    for (const task of [...SAMPLE_TASKS, ...demoTasks(new Date())]) {
-      await client.query(
-        `insert into tasks (user_id, mata_kuliah_id, judul, deskripsi, deadline, created_at, status)
-         values ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          userId,
-          courseIds[task.courseIndex],
-          task.judul,
-          task.deskripsi,
-          task.deadline,
-          task.createdAt,
-          task.status ?? "belum",
-        ],
-      );
-    }
-
+    await work(client);
     await client.query("commit");
   } catch (error) {
     await client.query("rollback");
@@ -141,4 +135,52 @@ export async function resetDatabase(): Promise<void> {
   } finally {
     client.release();
   }
+}
+
+export function isDemoEmail(email: string): boolean {
+  return email.trim().toLowerCase() === DEMO_USER.email;
+}
+
+// menghapus seluruh data lalu mengisi ulang dengan data seed
+export async function resetDatabase(): Promise<void> {
+  const passwordHash = await bcrypt.hash(DEMO_USER.password, 10);
+
+  await inTransaction(async (client) => {
+    await client.query("truncate table tasks, courses, users restart identity cascade");
+    const { rows } = await client.query<{ id: number }>(
+      "insert into users (nama, email, password_hash) values ($1, $2, $3) returning id",
+      [DEMO_USER.nama, DEMO_USER.email, passwordHash],
+    );
+    await insertDemoContent(client, rows[0]!.id, new Date());
+  });
+}
+
+// hanya data milik akun demo yang diganti, akun lain di database tidak tersentuh
+export async function refreshDemoData(userId: number, now = new Date()): Promise<void> {
+  await inTransaction(async (client) => {
+    // tasks dan task_plans ikut terhapus lewat on delete cascade
+    await client.query("delete from courses where user_id = $1", [userId]);
+    await insertDemoContent(client, userId, now);
+  });
+}
+
+// membuat akun demo kalau belum ada lalu menyegarkan datanya, dipakai script db:reset-demo
+export async function ensureDemoAccount(): Promise<number> {
+  const existing = await pool.query<{ id: number }>(
+    "select id from users where lower(email) = $1",
+    [DEMO_USER.email],
+  );
+  let userId = existing.rows[0]?.id;
+
+  if (userId === undefined) {
+    const passwordHash = await bcrypt.hash(DEMO_USER.password, 10);
+    const { rows } = await pool.query<{ id: number }>(
+      "insert into users (nama, email, password_hash) values ($1, $2, $3) returning id",
+      [DEMO_USER.nama, DEMO_USER.email, passwordHash],
+    );
+    userId = rows[0]!.id;
+  }
+
+  await refreshDemoData(userId);
+  return userId;
 }
